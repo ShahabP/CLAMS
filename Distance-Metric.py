@@ -1077,3 +1077,148 @@ spearman_vector = distance_df["spearman_distance_mean"].values
 
 print("\nPearson distance vector:\n", pearson_vector)
 print("\nSpearman distance vector:\n", spearman_vector)
+
+
+from scipy.stats import pearsonr, spearmanr
+import numpy as np
+import pandas as pd
+
+# -------------------------------------------------
+# Select VARIABLE 4 (same as your pipeline)
+# -------------------------------------------------
+var4_name = var_names[4]
+
+# -------------------------------------------------
+# Get all mice (sorted numerically)
+# -------------------------------------------------
+mice = sorted(variable_matrices.keys(), key=lambda x: int(x))
+
+# -------------------------------------------------
+# Get ALL segments (global list)
+# -------------------------------------------------
+all_segments = sorted(
+    list(set(seg for df in variable_matrices.values() for seg in df["segment"].unique()))
+)
+
+print(f"Total segments detected: {len(all_segments)}")
+
+# -------------------------------------------------
+# Use ONLY first 8 segments
+# -------------------------------------------------
+selected_segments = all_segments[:8]
+
+print("Using first 8 segments:", selected_segments)
+
+# -------------------------------------------------
+# Initialize distance matrices
+# -------------------------------------------------
+n = len(mice)
+
+pearson_matrix = np.zeros((n, n))
+spearman_matrix = np.zeros((n, n))
+
+# -------------------------------------------------
+# Compute pairwise distances
+# -------------------------------------------------
+for i, mouse_i in enumerate(mice):
+
+    df_i = variable_matrices[mouse_i]
+
+    for j, mouse_j in enumerate(mice):
+
+        df_j = variable_matrices[mouse_j]
+
+        pearson_distances = []
+        spearman_distances = []
+
+        for seg in selected_segments:
+
+            # -------------------------
+            # Extract segment data
+            # -------------------------
+            df_i_seg = df_i[df_i["segment"].str.upper() == seg.upper()]
+            df_j_seg = df_j[df_j["segment"].str.upper() == seg.upper()]
+
+            ts_i = pd.to_numeric(df_i_seg[var4_name], errors="coerce").dropna().values
+            ts_j = pd.to_numeric(df_j_seg[var4_name], errors="coerce").dropna().values
+
+            # Skip if missing
+            if len(ts_i) == 0 or len(ts_j) == 0:
+                continue
+
+            # -------------------------
+            # Align lengths
+            # -------------------------
+            min_len = min(len(ts_i), len(ts_j))
+            ts_i_aligned = ts_i[:min_len]
+            ts_j_aligned = ts_j[:min_len]
+
+            # -------------------------
+            # Pearson
+            # -------------------------
+            try:
+                p_corr, _ = pearsonr(ts_i_aligned, ts_j_aligned)
+                pearson_distances.append(1 - p_corr)
+            except:
+                pass
+
+            # -------------------------
+            # Spearman
+            # -------------------------
+            try:
+                s_corr, _ = spearmanr(ts_i_aligned, ts_j_aligned)
+                spearman_distances.append(1 - s_corr)
+            except:
+                pass
+
+        # -------------------------------------------------
+        # Aggregate across segments
+        # -------------------------------------------------
+        pearson_matrix[i, j] = (
+            np.mean(pearson_distances) if pearson_distances else np.nan
+        )
+
+        spearman_matrix[i, j] = (
+            np.mean(spearman_distances) if spearman_distances else np.nan
+        )
+
+# -------------------------------------------------
+# Convert to DataFrames (labeled matrices)
+# -------------------------------------------------
+pearson_df = pd.DataFrame(pearson_matrix, index=mice, columns=mice)
+spearman_df = pd.DataFrame(spearman_matrix, index=mice, columns=mice)
+
+# -------------------------------------------------
+# Save matrices
+# -------------------------------------------------
+pearson_df.to_csv("pearson_distance_matrix.csv")
+spearman_df.to_csv("spearman_distance_matrix.csv")
+
+print("\nSaved:")
+print(" - pearson_distance_matrix.csv")
+print(" - spearman_distance_matrix.csv")
+
+# -------------------------------------------------
+# Create long-format pairwise table
+# -------------------------------------------------
+pairwise_rows = []
+
+for i, m1 in enumerate(mice):
+    for j, m2 in enumerate(mice):
+
+        if i >= j:
+            continue  # skip duplicates + diagonal
+
+        pairwise_rows.append({
+            "mouse_1": m1,
+            "mouse_2": m2,
+            "pearson_distance": pearson_matrix[i, j],
+            "spearman_distance": spearman_matrix[i, j]
+        })
+
+pairwise_df = pd.DataFrame(pairwise_rows)
+
+pairwise_df.to_csv("pairwise_distances_long_format.csv", index=False)
+
+print("\nSaved:")
+print(" - pairwise_distances_long_format.csv")
