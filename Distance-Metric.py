@@ -378,10 +378,10 @@ plt.show()
 # Segment plots by age groups
 # -------------------------------------------------
 age_groups = {
-    "6-7": (6,8),
-    "12-13": (12,14),
-    "18-19": (18,20),
-    "26-27": (25,27),
+    "6-8": (6,8),
+    "12-14": (12,14),
+    "18-20": (18,20),
+    "25-27": (25,27),
 }
 
 mouse_to_age_group = {}
@@ -841,7 +841,7 @@ import pandas as pd
 # -------------------------------------------------
 # Select variable 2 (same logic as your code)
 # -------------------------------------------------
-var2_name = var_names[5]   # adjust index if needed
+var2_name = var_names[2]   # adjust index if needed
 
 # -------------------------------------------------
 # Get Mouse #1 OFF1 reference signal
@@ -1086,7 +1086,7 @@ import pandas as pd
 # -------------------------------------------------
 # Select VARIABLE 4 (same as your pipeline)
 # -------------------------------------------------
-var4_name = var_names[4]
+var4_name = var_names[9]
 
 # -------------------------------------------------
 # Get all mice (sorted numerically)
@@ -1105,7 +1105,7 @@ print(f"Total segments detected: {len(all_segments)}")
 # -------------------------------------------------
 # Use ONLY first 8 segments
 # -------------------------------------------------
-selected_segments = all_segments[:8]
+selected_segments = all_segments[1:8]
 
 print("Using first 8 segments:", selected_segments)
 
